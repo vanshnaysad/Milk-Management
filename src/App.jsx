@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { ref, onValue, push, set, remove } from 'firebase/database';
-import { db, enableNetwork, goOffline } from './firebase';
+import { ref, onValue, push, set, remove, goOnline } from 'firebase/database';
+import { db } from './firebase';
 import './index.css';
 
 
@@ -34,7 +34,7 @@ export default function MilkManagementApp() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      enableNetwork(db).catch(() => {});
+      goOnline(db);
     };
     const handleOffline = () => {
       setIsOnline(false);

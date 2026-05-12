@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, enableNetwork, goOffline } from "firebase/database";
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDBeJaN4eA6VVYXbw1sFr4MQmKSqohzORs",
@@ -15,5 +15,3 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 
-// Re-export helpers for online/offline control
-export { enableNetwork, goOffline };
