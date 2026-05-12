@@ -1,22 +1,39 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { ref, onValue, push, set, remove, goOnline } from 'firebase/database';
-import { db } from './firebase';
+import { signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
+import { db, auth, googleProvider } from './firebase';
 import './index.css';
 
 
 export default function MilkManagementApp() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const [entries, setEntries] = useState([]);
 
   useEffect(() => {
-    const customersRef = ref(db, 'customers');
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setCustomers([]);
+      setEntries([]);
+      return;
+    }
+
+    const customersRef = ref(db, `users/${user.uid}/customers`);
     const unsubscribeCustomers = onValue(customersRef, (snapshot) => {
       const data = snapshot.val();
       const customersList = data ? Object.values(data) : [];
       setCustomers(customersList);
     });
 
-    const entriesRef = ref(db, 'entries');
+    const entriesRef = ref(db, `users/${user.uid}/entries`);
     const unsubscribeEntries = onValue(entriesRef, (snapshot) => {
       const data = snapshot.val();
       const entriesList = data ? Object.values(data) : [];
@@ -27,7 +44,7 @@ export default function MilkManagementApp() {
       unsubscribeCustomers();
       unsubscribeEntries();
     };
-  }, []);
+  }, [user]);
 
   // ── ONLINE / OFFLINE STATUS ──────────────────────────────────────────────
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -49,15 +66,16 @@ export default function MilkManagementApp() {
 
   // ── LOCAL DEVICE MIRROR (always keep a copy on the phone/device) ─────────
   useEffect(() => {
-    if (customers.length > 0 || entries.length > 0) {
+    if (user && (customers.length > 0 || entries.length > 0)) {
       const snapshot = { customers, entries, savedAt: new Date().toISOString() };
-      localStorage.setItem('milk_data_mirror', JSON.stringify(snapshot));
+      localStorage.setItem(`milk_data_mirror_${user.uid}`, JSON.stringify(snapshot));
     }
-  }, [customers, entries]);
+  }, [customers, entries, user]);
 
   // Load from local mirror if Firebase is offline
   useEffect(() => {
-    const mirror = localStorage.getItem('milk_data_mirror');
+    if (!user) return;
+    const mirror = localStorage.getItem(`milk_data_mirror_${user.uid}`);
     if (!navigator.onLine && mirror) {
       try {
         const { customers: c, entries: e } = JSON.parse(mirror);
@@ -65,7 +83,7 @@ export default function MilkManagementApp() {
         setEntries(e || []);
       } catch (_) {}
     }
-  }, []);
+  }, [user]);
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('milk_theme') || 'light';
@@ -181,6 +199,7 @@ Sent from Milk Management System`
 
   // Restore from JSON file
   const restoreFromFile = useCallback((e) => {
+    if (!user) return;
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -190,12 +209,12 @@ Sent from Milk Management System`
         if (data.customers && Array.isArray(data.customers)) {
           // Write customers to Firebase
           data.customers.forEach(c => {
-            if (c.id) set(ref(db, `customers/${c.id}`), c);
+            if (c.id) set(ref(db, `users/${user.uid}/customers/${c.id}`), c);
           });
         }
         if (data.entries && Array.isArray(data.entries)) {
           data.entries.forEach(en => {
-            if (en.id) set(ref(db, `entries/${en.id}`), en);
+            if (en.id) set(ref(db, `users/${user.uid}/entries/${en.id}`), en);
           });
         }
         setBackupSuccess('Data restored successfully from file! ✅');
@@ -207,7 +226,7 @@ Sent from Milk Management System`
     };
     reader.readAsText(file);
     e.target.value = '';
-  }, []);
+  }, [user]);
 
   // Check if it's billing time (last day of month, or 1st/2nd of new month)
   const isBillingTime = useMemo(() => {
@@ -249,12 +268,13 @@ Sent from Milk Management System`
   });
 
   const addCustomer = () => {
+    if (!user) return;
     if (!customerForm.name || !customerForm.mobile) {
       alert("Please fill all required fields");
       return;
     }
 
-    const customersRef = ref(db, 'customers');
+    const customersRef = ref(db, `users/${user.uid}/customers`);
     const newCustomerRef = push(customersRef);
     const newCustomer = {
       id: newCustomerRef.key,
@@ -271,6 +291,7 @@ Sent from Milk Management System`
   };
 
   const addEntry = () => {
+    if (!user) return;
     if (!entryForm.customer) {
       alert("Select customer");
       return;
@@ -281,7 +302,7 @@ Sent from Milk Management System`
 
     const total = morning + evening;
 
-    const entriesRef = ref(db, 'entries');
+    const entriesRef = ref(db, `users/${user.uid}/entries`);
     const newEntryRef = push(entriesRef);
 
     const newEntry = {
@@ -304,10 +325,11 @@ Sent from Milk Management System`
   };
 
   const deleteCustomer = (id) => {
-    remove(ref(db, `customers/${id}`));
+    if (!user) return;
+    remove(ref(db, `users/${user.uid}/customers/${id}`));
     entries.forEach((e) => {
       if (e.customerId === id) {
-        remove(ref(db, `entries/${e.id}`));
+        remove(ref(db, `users/${user.uid}/entries/${e.id}`));
       }
     });
   };
@@ -337,11 +359,52 @@ Sent from Milk Management System`
     return bills.reduce((sum, b) => sum + b.amount, 0);
   }, [bills]);
 
+  if (authLoading) {
+    return (
+      <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="loader"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div className="glass-card animate-fade-in" style={{ maxWidth: '400px', width: '90%' }}>
+          <img src="/logo.png" alt="Logo" style={{ height: '5rem', marginBottom: '1.5rem' }} />
+          <h1 className="header-title" style={{ fontSize: '1.75rem', marginBottom: '1rem' }}>Milk Management</h1>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Sign in to access your personal data and sync across devices.</p>
+          <button 
+            onClick={() => signInWithPopup(auth, googleProvider)}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Sign in with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       <div className="max-w-container">
         {/* Top Bar: Online status + Theme toggle */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <img src={user.photoURL} alt={user.displayName} style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', border: '2px solid var(--primary-color)' }} />
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>{user.displayName}</div>
+              <button onClick={() => signOut(auth)} style={{ background: 'none', border: 'none', color: 'var(--danger-color)', fontSize: '0.75rem', padding: 0, cursor: 'pointer', fontWeight: '600' }}>Logout</button>
+            </div>
+          </div>
+
           {/* Online / Offline Badge */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -355,7 +418,7 @@ Sent from Milk Management System`
             backdropFilter: 'blur(8px)',
           }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: isOnline ? '#10b981' : '#ef4444', display: 'inline-block', boxShadow: isOnline ? '0 0 6px #10b981' : '0 0 6px #ef4444', animation: 'pulse-dot 1.5s infinite' }} />
-            {isOnline ? '🟢 Online – Firebase Synced' : '🔴 Offline – Using Device Cache'}
+            {isOnline ? 'Online' : 'Offline'}
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -363,22 +426,23 @@ Sent from Milk Management System`
             <button
               onClick={() => setBackupOpen(v => !v)}
               className="btn"
-              style={{ width: 'auto', padding: '0.5rem 1rem', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', boxShadow: '0 2px 12px rgba(99,102,241,0.4)', border: 'none' }}
+              style={{ width: 'auto', padding: '0.5rem 0.75rem', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', boxShadow: '0 2px 12px rgba(99,102,241,0.4)', border: 'none', fontSize: '0.85rem' }}
             >
-              💾 Backup & Restore
+              💾 Backup
             </button>
             <button
               onClick={toggleTheme}
               className="btn"
               style={{
                 width: 'auto',
-                padding: '0.5rem 1rem',
+                padding: '0.5rem 0.75rem',
                 backgroundColor: theme === 'light' ? '#1e293b' : '#f8fafc',
                 color: theme === 'light' ? '#f8fafc' : '#1e293b',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                fontSize: '0.85rem'
               }}
             >
-              {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+              {theme === 'light' ? '🌙' : '☀️'}
             </button>
           </div>
         </div>
