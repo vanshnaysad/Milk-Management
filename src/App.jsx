@@ -10,6 +10,7 @@ export default function MilkManagementApp() {
   const [authLoading, setAuthLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
   const [entries, setEntries] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -395,8 +396,8 @@ Sent from Milk Management System`
   return (
     <div className="app-container">
       <div className="max-w-container">
-        {/* Top Bar: Online status + Theme toggle */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        {/* Header Section */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <img src={user.photoURL} alt={user.displayName} style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', border: '2px solid var(--primary-color)' }} />
             <div>
@@ -405,488 +406,231 @@ Sent from Milk Management System`
             </div>
           </div>
 
-          {/* Online / Offline Badge */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.35rem 0.9rem',
-            borderRadius: '2rem',
-            fontSize: '0.8rem',
-            fontWeight: '700',
-            background: isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-            color: isOnline ? '#10b981' : '#ef4444',
-            border: `1.5px solid ${isOnline ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`,
-            backdropFilter: 'blur(8px)',
-          }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: isOnline ? '#10b981' : '#ef4444', display: 'inline-block', boxShadow: isOnline ? '0 0 6px #10b981' : '0 0 6px #ef4444', animation: 'pulse-dot 1.5s infinite' }} />
-            {isOnline ? 'Online' : 'Offline'}
-          </div>
-
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            {/* Backup Button */}
+            {/* Online / Offline Badge */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.3rem 0.75rem',
+              borderRadius: '2rem',
+              fontSize: '0.75rem',
+              fontWeight: '700',
+              background: isOnline ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              color: isOnline ? '#10b981' : '#ef4444',
+              border: `1px solid ${isOnline ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isOnline ? '#10b981' : '#ef4444', display: 'inline-block' }} />
+              {isOnline ? 'Online' : 'Offline'}
+            </div>
+            
             <button
               onClick={() => setBackupOpen(v => !v)}
-              className="btn"
-              style={{ width: 'auto', padding: '0.5rem 0.75rem', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', boxShadow: '0 2px 12px rgba(99,102,241,0.4)', border: 'none', fontSize: '0.85rem' }}
+              className="btn-icon"
+              title="Backup"
             >
-              💾 Backup
+              💾
             </button>
             <button
               onClick={toggleTheme}
-              className="btn"
-              style={{
-                width: 'auto',
-                padding: '0.5rem 0.75rem',
-                backgroundColor: theme === 'light' ? '#1e293b' : '#f8fafc',
-                color: theme === 'light' ? '#f8fafc' : '#1e293b',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                fontSize: '0.85rem'
-              }}
+              className="btn-icon"
             >
               {theme === 'light' ? '🌙' : '☀️'}
             </button>
           </div>
         </div>
 
-        {/* ── BACKUP PANEL ────────────────────────────────────────── */}
+        {/* Backup Panel */}
         {backupOpen && (
-          <div className="glass-card animate-fade-in" style={{
-            marginBottom: '1.5rem',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
-            borderColor: 'rgba(99,102,241,0.35)',
-            borderLeft: '4px solid #6366f1'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <h2 className="card-title" style={{ marginBottom: 0, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>💾 Backup & Restore Data</h2>
-              <button onClick={() => setBackupOpen(false)} style={{ background: 'transparent', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+          <div className="glass-card animate-fade-in" style={{ marginBottom: '1.5rem', borderLeft: '4px solid #6366f1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 className="card-title" style={{ margin: 0, fontSize: '1.1rem' }}>💾 Backup & Restore</h3>
+              <button onClick={() => setBackupOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
             </div>
-
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.25rem', lineHeight: 1.6 }}>
-              Your data is automatically saved on <strong>Firebase Cloud</strong> (syncs across all devices) AND mirrored on <strong>this device</strong> (works offline). Use these options for extra safety:
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
-              {/* Gmail Backup */}
-              <button
-                onClick={sendGmailBackup}
-                style={{
-                  padding: '0.85rem 1rem', borderRadius: '0.75rem', border: 'none', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #ea4335, #fbbc04)',
-                  color: '#fff', fontWeight: '700', fontSize: '0.9rem',
-                  boxShadow: '0 4px 15px rgba(234,67,53,0.3)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-                onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(234,67,53,0.4)'; }}
-                onMouseOut={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 15px rgba(234,67,53,0.3)'; }}
-              >
-                📧 Send Backup to Gmail
-              </button>
-
-              {/* Download JSON */}
-              <button
-                onClick={downloadJSON}
-                style={{
-                  padding: '0.85rem 1rem', borderRadius: '0.75rem', border: 'none', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
-                  color: '#fff', fontWeight: '700', fontSize: '0.9rem',
-                  boxShadow: '0 4px 15px rgba(59,130,246,0.3)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-                onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(59,130,246,0.4)'; }}
-                onMouseOut={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 15px rgba(59,130,246,0.3)'; }}
-              >
-                📥 Download JSON Backup
-              </button>
-
-              {/* Download CSV */}
-              <button
-                onClick={downloadCSV}
-                style={{
-                  padding: '0.85rem 1rem', borderRadius: '0.75rem', border: 'none', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff', fontWeight: '700', fontSize: '0.9rem',
-                  boxShadow: '0 4px 15px rgba(16,185,129,0.3)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-                onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(16,185,129,0.4)'; }}
-                onMouseOut={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 4px 15px rgba(16,185,129,0.3)'; }}
-              >
-                📊 Download CSV (Excel)
-              </button>
-
-              {/* Restore from file */}
-              <label
-                style={{
-                  padding: '0.85rem 1rem', borderRadius: '0.75rem',
-                  background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                  color: '#fff', fontWeight: '700', fontSize: '0.9rem',
-                  boxShadow: '0 4px 15px rgba(245,158,11,0.3)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-                onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseOut={e => { e.currentTarget.style.transform = ''; }}
-              >
-                🔄 Restore from JSON File
+            <div className="backup-grid">
+              <button onClick={sendGmailBackup} className="backup-btn gmail">📧 Gmail</button>
+              <button onClick={downloadJSON} className="backup-btn json">📥 JSON</button>
+              <button onClick={downloadCSV} className="backup-btn csv">📊 CSV</button>
+              <label className="backup-btn restore">
+                🔄 Restore
                 <input type="file" accept=".json" onChange={restoreFromFile} style={{ display: 'none' }} />
               </label>
             </div>
+            {backupSuccess && <div className="backup-success">{backupSuccess}</div>}
+          </div>
+        )}
 
-            {/* Success message */}
-            {backupSuccess && (
-              <div style={{
-                padding: '0.75rem 1rem', borderRadius: '0.5rem',
-                background: 'rgba(16,185,129,0.15)', color: '#10b981',
-                border: '1px solid rgba(16,185,129,0.3)', fontWeight: '600', fontSize: '0.9rem',
-                animation: 'fadeIn 0.3s ease'
-              }}>
-                {backupSuccess}
+        <h1 className="header-title">Milk Manager</h1>
+
+        {/* Main Content Area based on Tabs */}
+        <div style={{ paddingBottom: '80px' }}>
+          {activeTab === 'dashboard' && (
+            <div className="tab-content animate-fade-in">
+              {isBillingTime && (
+                <div className="billing-alert">
+                  <strong>🔔 Billing Time!</strong> Check your monthly bills.
+                </div>
+              )}
+              
+              <div className="stats-container">
+                <div className="stat-card">
+                  <div className="stat-icon" style={{ color: '#3b82f6' }}>👥</div>
+                  <div className="stat-details">
+                    <h3>Customers</h3>
+                    <p className="stat-value">{customers.length}</p>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon" style={{ color: '#10b981' }}>🥛</div>
+                  <div className="stat-details">
+                    <h3>Today</h3>
+                    <p className="stat-value">{todayTotalMilk.toFixed(1)}L</p>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon" style={{ color: '#f59e0b' }}>💰</div>
+                  <div className="stat-details">
+                    <h3>Revenue</h3>
+                    <p className="stat-value">₹{totalExpectedRevenue.toFixed(0)}</p>
+                  </div>
+                </div>
               </div>
-            )}
 
-            {/* Info box */}
-            <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', borderRadius: '0.5rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.7 }}>
-                <strong>🛡️ Your Data is Protected in 3 Ways:</strong><br />
-                1️⃣ <strong>Firebase Cloud</strong> – Syncs automatically across all devices<br />
-                2️⃣ <strong>Device Cache</strong> – Works offline, auto-saved on your phone<br />
-                3️⃣ <strong>Manual Backup</strong> – Email to Gmail or download file for extra safety
-              </p>
+              <div className="glass-card">
+                <h2 className="card-title">Daily Entry</h2>
+                <div className="form-group">
+                  <select
+                    value={entryForm.customer}
+                    onChange={(e) => setEntryForm({...entryForm, customer: e.target.value})}
+                    className="form-input"
+                  >
+                    <option value="">Select Customer</option>
+                    {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <input type="number" placeholder="Morning (L)" value={entryForm.morning} onChange={(e) => setEntryForm({...entryForm, morning: e.target.value})} className="form-input" />
+                    <input type="number" placeholder="Evening (L)" value={entryForm.evening} onChange={(e) => setEntryForm({...entryForm, evening: e.target.value})} className="form-input" />
+                  </div>
+                  <input type="date" value={entryForm.date} onChange={(e) => setEntryForm({...entryForm, date: e.target.value})} className="form-input" />
+                  <button onClick={addEntry} className="btn btn-success">Save Entry</button>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <h1 className="header-title animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-          <img src="/logo.png" alt="Logo" style={{ height: '3.5rem', width: '3.5rem', objectFit: 'contain', borderRadius: '0.5rem' }} />
-          Milk Management System
-        </h1>
+          {activeTab === 'customers' && (
+            <div className="tab-content animate-fade-in">
+              <div className="glass-card">
+                <h2 className="card-title">Add New Customer</h2>
+                <div className="form-group">
+                  <input type="text" placeholder="Name" value={customerForm.name} onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})} className="form-input" />
+                  <input type="text" placeholder="Mobile" value={customerForm.mobile} onChange={(e) => setCustomerForm({...customerForm, mobile: e.target.value})} className="form-input" />
+                  <input type="number" placeholder="Rate / Liter" value={customerForm.rate} onChange={(e) => setCustomerForm({...customerForm, rate: e.target.value})} className="form-input" />
+                  <button onClick={addCustomer} className="btn btn-primary">Add Customer</button>
+                </div>
+              </div>
 
-        {isBillingTime && (
-          <div className="glass-card animate-fade-in" style={{ 
-            backgroundColor: 'rgba(254, 243, 199, 0.8)', 
-            borderColor: 'rgba(245, 158, 11, 0.4)', 
-            color: '#b45309', 
-            borderLeft: '4px solid #f59e0b' 
-          }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.25rem' }}>
-              🔔 Time to Send Bills!
-            </h3>
-            <p style={{ margin: 0, fontWeight: '500' }}>
-              It's the end of the month. Scroll down to the Monthly Billing section to send SMS/WhatsApp reminders to your customers.
-            </p>
-          </div>
-        )}
-
-        {/* Stats Dashboard */}
-        <div className="stats-container animate-fade-in">
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>👥</div>
-            <div className="stat-details">
-              <h3>Total Customers</h3>
-              <p className="stat-value">{customers.length}</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>🥛</div>
-            <div className="stat-details">
-              <h3>Today's Milk</h3>
-              <p className="stat-value">{todayTotalMilk.toFixed(1)} L</p>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>💰</div>
-            <div className="stat-details">
-              <h3>Est. Revenue</h3>
-              <p className="stat-value">₹{totalExpectedRevenue.toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid-layout">
-          <div className="glass-card animate-fade-in delay-1">
-            <h2 className="card-title">Add Customer</h2>
-
-            <div className="form-group">
-              <input
-                type="text"
-                placeholder="Customer Name"
-                value={customerForm.name}
-                onChange={(e) =>
-                  setCustomerForm({
-                    ...customerForm,
-                    name: e.target.value,
-                  })
-                }
-                className="form-input"
-              />
-
-              <input
-                type="text"
-                placeholder="Mobile Number"
-                value={customerForm.mobile}
-                onChange={(e) =>
-                  setCustomerForm({
-                    ...customerForm,
-                    mobile: e.target.value,
-                  })
-                }
-                className="form-input"
-              />
-
-              <input
-                type="number"
-                placeholder="Milk Rate Per Liter"
-                value={customerForm.rate}
-                onChange={(e) =>
-                  setCustomerForm({
-                    ...customerForm,
-                    rate: e.target.value,
-                  })
-                }
-                className="form-input"
-              />
-
-              <button
-                onClick={addCustomer}
-                className="btn btn-primary"
-              >
-                Add Customer
-              </button>
-            </div>
-          </div>
-
-          <div className="glass-card animate-fade-in delay-1">
-            <h2 className="card-title">Daily Milk Entry</h2>
-
-            <div className="form-group">
-              <select
-                value={entryForm.customer}
-                onChange={(e) =>
-                  setEntryForm({
-                    ...entryForm,
-                    customer: e.target.value,
-                  })
-                }
-                className="form-input"
-              >
-                <option value="">Select Customer</option>
-
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="number"
-                placeholder="Morning Milk (L)"
-                value={entryForm.morning}
-                onChange={(e) =>
-                  setEntryForm({
-                    ...entryForm,
-                    morning: e.target.value,
-                  })
-                }
-                className="form-input"
-              />
-
-              <input
-                type="number"
-                placeholder="Evening Milk (L)"
-                value={entryForm.evening}
-                onChange={(e) =>
-                  setEntryForm({
-                    ...entryForm,
-                    evening: e.target.value,
-                  })
-                }
-                className="form-input"
-              />
-
-              <input
-                type="date"
-                value={entryForm.date}
-                onChange={(e) =>
-                  setEntryForm({
-                    ...entryForm,
-                    date: e.target.value,
-                  })
-                }
-                className="form-input"
-              />
-
-              <button
-                onClick={addEntry}
-                className="btn btn-success"
-              >
-                Save Entry
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-card animate-fade-in delay-2">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <h2 className="card-title" style={{ marginBottom: 0 }}>Customers</h2>
-            <input 
-              type="text" 
-              placeholder="🔍 Search customers..." 
-              value={customerSearch}
-              onChange={(e) => setCustomerSearch(e.target.value)}
-              className="form-input"
-              style={{ width: 'auto', minWidth: '250px', padding: '0.5rem 1rem', borderRadius: '2rem' }}
-            />
-          </div>
-
-          <table className="table-container">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Mobile</th>
-                <th>Rate</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredCustomers.map((customer) => (
-                <tr key={customer.id}>
-                  <td>{customer.name}</td>
-                  <td>{customer.mobile}</td>
-                  <td>₹{customer.rate}</td>
-                  <td>
-                    <button
-                      onClick={() => deleteCustomer(customer.id)}
-                      className="btn btn-danger"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredCustomers.length === 0 && (
-                <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    {customers.length === 0 ? "No customers added yet." : "No customers found matching search."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="glass-card animate-fade-in delay-2">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <h2 className="card-title" style={{ marginBottom: 0 }}>Milk Entry Records</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: '600' }}>Date Filter:</label>
-              <input 
-                type="date" 
-                value={entryDateFilter}
-                onChange={(e) => setEntryDateFilter(e.target.value)}
-                className="form-input"
-                style={{ width: 'auto', padding: '0.5rem 1rem', borderRadius: '0.5rem' }}
-              />
-              {entryDateFilter && (
-                <button onClick={() => setEntryDateFilter("")} className="btn" style={{ width: 'auto', padding: '0.5rem', background: 'transparent', color: 'var(--danger-color)', border: '1px solid var(--danger-color)' }}>
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-
-          <table className="table-container">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Morning</th>
-                <th>Evening</th>
-                <th>Total</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredEntries.map((entry) => {
-                const customer = customers.find(
-                  (c) => c.id === entry.customerId
-                );
-
-                return (
-                  <tr key={entry.id}>
-                    <td>{customer?.name}</td>
-                    <td>{entry.morning} L</td>
-                    <td>{entry.evening} L</td>
-                    <td className="font-semibold">{entry.total} L</td>
-                    <td>{entry.date}</td>
-                  </tr>
-                );
-              })}
-              {filteredEntries.length === 0 && (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    {entries.length === 0 ? "No entries recorded yet." : "No entries found for selected date."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="glass-card animate-fade-in delay-3">
-          <h2 className="card-title">Monthly Billing</h2>
-
-          <table className="table-container">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Total Milk</th>
-                <th>Rate</th>
-                <th>Total Amount</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {bills.map((bill) => {
-                const message = `નમસ્તે ${bill.customer.name}, આ મહિનાનું આપનું કુલ દૂધ ${bill.totalMilk.toFixed(2)} લિટર થયું છે (ભાવ: ₹${bill.customer.rate}/લિટર). આપનું કુલ બિલ ₹${bill.amount.toFixed(2)} છે. કૃપા કરીને બિલ ચૂકવી આપવા વિનંતી.`;
-                const smsLink = `sms:${bill.customer.mobile}?body=${encodeURIComponent(message)}`;
-                // Assuming Indian mobile numbers for WhatsApp wa.me link (+91), fallback to raw if already has country code.
-                // Simple logic: if length is 10, prepend 91
-                const mobileFormatted = bill.customer.mobile.length === 10 ? `91${bill.customer.mobile}` : bill.customer.mobile;
-                const whatsappLink = `https://wa.me/${mobileFormatted}?text=${encodeURIComponent(message)}`;
-
-                return (
-                  <tr key={bill.customer.id}>
-                    <td>{bill.customer.name}</td>
-                    <td>{bill.totalMilk.toFixed(2)} L</td>
-                    <td>₹{bill.customer.rate}</td>
-                    <td className="font-semibold text-green">
-                      ₹{bill.amount.toFixed(2)}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <a href={smsLink} className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', textDecoration: 'none', textAlign: 'center', fontSize: '0.875rem', borderRadius: '0.5rem' }}>SMS</a>
-                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-success" style={{ padding: '0.4rem 0.8rem', textDecoration: 'none', textAlign: 'center', fontSize: '0.875rem', borderRadius: '0.5rem' }}>WhatsApp</a>
+              <div className="glass-card">
+                <div className="card-header-flex">
+                  <h2 className="card-title">Customer List</h2>
+                  <input type="text" placeholder="Search..." value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} className="search-input" />
+                </div>
+                
+                <div className="list-container">
+                  {filteredCustomers.map((c) => (
+                    <div key={c.id} className="item-card">
+                      <div className="item-info">
+                        <div className="item-name">{c.name}</div>
+                        <div className="item-sub">{c.mobile} • ₹{c.rate}/L</div>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {bills.length === 0 && (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No billing data available.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      <button onClick={() => deleteCustomer(c.id)} className="btn-delete">🗑️</button>
+                    </div>
+                  ))}
+                  {filteredCustomers.length === 0 && <div className="empty-state">No customers found</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'entries' && (
+            <div className="tab-content animate-fade-in">
+              <div className="glass-card">
+                <div className="card-header-flex">
+                  <h2 className="card-title">Milk Records</h2>
+                  <input type="date" value={entryDateFilter} onChange={(e) => setEntryDateFilter(e.target.value)} className="search-input" />
+                </div>
+                
+                <div className="list-container">
+                  {filteredEntries.map((e) => {
+                    const c = customers.find(cu => cu.id === e.customerId);
+                    return (
+                      <div key={e.id} className="item-card">
+                        <div className="item-info">
+                          <div className="item-name">{c?.name || 'Unknown'}</div>
+                          <div className="item-sub">{e.date}</div>
+                          <div className="item-details">
+                            <span>M: {e.morning}L</span>
+                            <span>E: {e.evening}L</span>
+                            <span className="bold">Total: {e.total}L</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {filteredEntries.length === 0 && <div className="empty-state">No records for this date</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'billing' && (
+            <div className="tab-content animate-fade-in">
+              <div className="glass-card">
+                <h2 className="card-title">Monthly Billing</h2>
+                <div className="list-container">
+                  {bills.map((b) => {
+                    const message = `Namaste ${b.customer.name}, Total Milk: ${b.totalMilk.toFixed(2)}L (@₹${b.customer.rate}). Total Bill: ₹${b.amount.toFixed(2)}.`;
+                    const mobileFormatted = b.customer.mobile.length === 10 ? `91${b.customer.mobile}` : b.customer.mobile;
+                    const whatsappLink = `https://wa.me/${mobileFormatted}?text=${encodeURIComponent(message)}`;
+                    
+                    return (
+                      <div key={b.customer.id} className="item-card">
+                        <div className="item-info">
+                          <div className="item-name">{b.customer.name}</div>
+                          <div className="item-sub">{b.totalMilk.toFixed(1)}L • ₹{b.customer.rate}/L</div>
+                          <div className="item-amount">₹{b.amount.toFixed(2)}</div>
+                        </div>
+                        <div className="item-actions">
+                          <a href={whatsappLink} target="_blank" rel="noreferrer" className="btn-action whatsapp">WA</a>
+                          <a href={`sms:${b.customer.mobile}?body=${encodeURIComponent(message)}`} className="btn-action sms">SMS</a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {bills.length === 0 && <div className="empty-state">No billing data</div>}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Bottom Navigation for Mobile */}
+        <nav className="bottom-nav">
+          <button className={activeTab === 'dashboard' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('dashboard')}>
+            <span className="nav-icon">🏠</span>
+            <span className="nav-text">Home</span>
+          </button>
+          <button className={activeTab === 'customers' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('customers')}>
+            <span className="nav-icon">👥</span>
+            <span className="nav-text">Users</span>
+          </button>
+          <button className={activeTab === 'entries' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('entries')}>
+            <span className="nav-icon">📅</span>
+            <span className="nav-text">Records</span>
+          </button>
+          <button className={activeTab === 'billing' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('billing')}>
+            <span className="nav-icon">💰</span>
+            <span className="nav-text">Billing</span>
+          </button>
+        </nav>
       </div>
     </div>
   );
