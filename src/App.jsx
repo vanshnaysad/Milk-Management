@@ -404,6 +404,20 @@ export default function MilkManagementApp() {
               </div>
 
               <div className="glass-card">
+                <h2 className="card-title">Add New Customer</h2>
+                <div className="form-group">
+                  <input type="text" placeholder="Name" value={customerForm.name} onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})} className="form-input" />
+                  <input type="text" placeholder="Mobile" value={customerForm.mobile} onChange={(e) => setCustomerForm({...customerForm, mobile: e.target.value})} className="form-input" />
+                  <input type="number" placeholder="Rate / Liter" value={customerForm.rate} onChange={(e) => setCustomerForm({...customerForm, rate: e.target.value})} className="form-input" />
+                  <button onClick={addCustomer} className="btn btn-primary">Add Customer</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'customers' && (
+            <div className="tab-content animate-fade-in">
+              <div className="glass-card">
                 <h2 className="card-title">Daily Entry</h2>
                 <div className="form-group">
                   <select
@@ -420,20 +434,6 @@ export default function MilkManagementApp() {
                   </div>
                   <input type="date" value={entryForm.date} onChange={(e) => setEntryForm({...entryForm, date: e.target.value})} className="form-input" />
                   <button onClick={addEntry} className="btn btn-success">Save Entry</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'customers' && (
-            <div className="tab-content animate-fade-in">
-              <div className="glass-card">
-                <h2 className="card-title">Add New Customer</h2>
-                <div className="form-group">
-                  <input type="text" placeholder="Name" value={customerForm.name} onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})} className="form-input" />
-                  <input type="text" placeholder="Mobile" value={customerForm.mobile} onChange={(e) => setCustomerForm({...customerForm, mobile: e.target.value})} className="form-input" />
-                  <input type="number" placeholder="Rate / Liter" value={customerForm.rate} onChange={(e) => setCustomerForm({...customerForm, rate: e.target.value})} className="form-input" />
-                  <button onClick={addCustomer} className="btn btn-primary">Add Customer</button>
                 </div>
               </div>
 
@@ -528,8 +528,8 @@ export default function MilkManagementApp() {
             <span className="nav-text">Home</span>
           </button>
           <button className={activeTab === 'customers' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('customers')}>
-            <span className="nav-icon">👥</span>
-            <span className="nav-text">Users</span>
+            <span className="nav-icon">📝</span>
+            <span className="nav-text">Entry</span>
           </button>
           <button className={activeTab === 'entries' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('entries')}>
             <span className="nav-icon">📅</span>
