@@ -51,6 +51,9 @@ const translations = {
     deleteConfirm: "Are you sure you want to delete this?",
     deleteMorning: "Delete Morning",
     deleteEvening: "Delete Evening",
+    edit: "Edit",
+    save: "Save",
+    cancel: "Cancel",
     createdBy: "Created by Naysad Vansh",
     billingMessage: (name, total, rate, amount) => `Namaste ${name}, Total Milk: ${total}L (@₹${rate}). Total Bill: ₹${amount}.`
   },
@@ -100,6 +103,9 @@ const translations = {
     deleteConfirm: "શું તમે આ કાઢી નાખવા માંગો છો?",
     deleteMorning: "સવારનું કાઢી નાખો",
     deleteEvening: "સાંજનું કાઢી નાખો",
+    edit: "ફેરફાર કરો",
+    save: "સાચવો",
+    cancel: "રદ કરો",
     createdBy: "Naysad Vansh દ્વારા બનાવવામાં આવ્યું",
     billingMessage: (name, total, rate, amount) => `નમસ્તે ${name}, કુલ દૂધ: ${total} લિટર (@₹${rate}). કુલ બિલ: ₹${amount}.`
   }
@@ -113,6 +119,8 @@ export default function MilkManagementApp() {
   const [entries, setEntries] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [lang, setLang] = useState(() => localStorage.getItem('milk_lang') || 'gu');
+  const [editingEntryId, setEditingEntryId] = useState(null);
+  const [editForm, setEditForm] = useState({ morning: "", evening: "" });
 
   const t = translations[lang];
 
@@ -331,6 +339,41 @@ export default function MilkManagementApp() {
     } else {
       set(ref(db, `users/${user.uid}/entries/${id}`), newData);
     }
+  };
+
+  const handleEditClick = (entry) => {
+    setEditingEntryId(entry.id);
+    setEditForm({
+      morning: entry.morning.toString(),
+      evening: entry.evening.toString()
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntryId(null);
+  };
+
+  const handleSaveEdit = (id) => {
+    if (!user) return;
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+
+    const morning = parseFloat(editForm.morning || 0);
+    const evening = parseFloat(editForm.evening || 0);
+    const total = morning + evening;
+
+    if (total === 0) {
+      remove(ref(db, `users/${user.uid}/entries/${id}`));
+    } else {
+      const updatedEntry = {
+        ...entry,
+        morning,
+        evening,
+        total
+      };
+      set(ref(db, `users/${user.uid}/entries/${id}`), updatedEntry);
+    }
+    setEditingEntryId(null);
   };
 
   const bills = useMemo(() => {
@@ -608,19 +651,54 @@ export default function MilkManagementApp() {
                         <div className="item-info">
                           <div className="item-name">{c?.name || 'Unknown'}</div>
                           <div className="item-sub">{e.date}</div>
-                          <div className="item-details">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <span>M: {e.morning}L</span>
-                              {e.morning > 0 && <button onClick={() => clearField(e.id, 'morning')} className="btn-mini-delete" title={t.deleteMorning}>×</button>}
+                          
+                          {editingEntryId === e.id ? (
+                            <div className="edit-entry-inline">
+                              <div className="edit-inputs">
+                                <div className="edit-input-group">
+                                  <span>M:</span>
+                                  <input 
+                                    type="number" 
+                                    value={editForm.morning} 
+                                    onChange={(ev) => setEditForm({...editForm, morning: ev.target.value})}
+                                    className="inline-input"
+                                  />
+                                </div>
+                                <div className="edit-input-group">
+                                  <span>E:</span>
+                                  <input 
+                                    type="number" 
+                                    value={editForm.evening} 
+                                    onChange={(ev) => setEditForm({...editForm, evening: ev.target.value})}
+                                    className="inline-input"
+                                  />
+                                </div>
+                              </div>
+                              <div className="edit-actions">
+                                <button onClick={() => handleSaveEdit(e.id)} className="btn-save-mini">{t.save}</button>
+                                <button onClick={handleCancelEdit} className="btn-cancel-mini">{t.cancel}</button>
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <span>E: {e.evening}L</span>
-                              {e.evening > 0 && <button onClick={() => clearField(e.id, 'evening')} className="btn-mini-delete" title={t.deleteEvening}>×</button>}
+                          ) : (
+                            <div className="item-details">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <span>M: {e.morning}L</span>
+                                {e.morning > 0 && <button onClick={() => clearField(e.id, 'morning')} className="btn-mini-delete" title={t.deleteMorning}>×</button>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <span>E: {e.evening}L</span>
+                                {e.evening > 0 && <button onClick={() => clearField(e.id, 'evening')} className="btn-mini-delete" title={t.deleteEvening}>×</button>}
+                              </div>
+                              <span className="bold">Total: {e.total}L</span>
                             </div>
-                            <span className="bold">Total: {e.total}L</span>
-                          </div>
+                          )}
                         </div>
-                        <button onClick={() => deleteEntry(e.id)} className="btn-delete-red" style={{ fontSize: '0.65rem', padding: '0.25rem 0.5rem' }}>{t.delete}</button>
+                        {editingEntryId !== e.id && (
+                          <div className="item-actions-stack">
+                            <button onClick={() => handleEditClick(e)} className="btn-edit-blue">{t.edit}</button>
+                            <button onClick={() => deleteEntry(e.id)} className="btn-delete-red">{t.delete}</button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
