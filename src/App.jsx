@@ -49,6 +49,8 @@ const translations = {
     langCode: "EN",
     delete: "Delete",
     deleteConfirm: "Are you sure you want to delete this?",
+    deleteMorning: "Delete Morning",
+    deleteEvening: "Delete Evening",
     billingMessage: (name, total, rate, amount) => `Namaste ${name}, Total Milk: ${total}L (@₹${rate}). Total Bill: ₹${amount}.`
   },
   gu: {
@@ -95,6 +97,8 @@ const translations = {
     langCode: "GU",
     delete: "ડિલીટ",
     deleteConfirm: "શું તમે આ કાઢી નાખવા માંગો છો?",
+    deleteMorning: "સવારનું કાઢી નાખો",
+    deleteEvening: "સાંજનું કાઢી નાખો",
     billingMessage: (name, total, rate, amount) => `નમસ્તે ${name}, કુલ દૂધ: ${total} લિટર (@₹${rate}). કુલ બિલ: ₹${amount}.`
   }
 };
@@ -307,6 +311,23 @@ export default function MilkManagementApp() {
     if (!user) return;
     if (window.confirm(t.deleteConfirm)) {
       remove(ref(db, `users/${user.uid}/entries/${id}`));
+    }
+  };
+
+  const clearField = (id, field) => {
+    if (!user) return;
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+
+    const newData = { ...entry };
+    if (field === 'morning') newData.morning = 0;
+    if (field === 'evening') newData.evening = 0;
+    newData.total = newData.morning + newData.evening;
+
+    if (newData.total === 0) {
+      remove(ref(db, `users/${user.uid}/entries/${id}`));
+    } else {
+      set(ref(db, `users/${user.uid}/entries/${id}`), newData);
     }
   };
 
@@ -585,8 +606,14 @@ export default function MilkManagementApp() {
                           <div className="item-name">{c?.name || 'Unknown'}</div>
                           <div className="item-sub">{e.date}</div>
                           <div className="item-details">
-                            <span>M: {e.morning}L</span>
-                            <span>E: {e.evening}L</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <span>M: {e.morning}L</span>
+                              {e.morning > 0 && <button onClick={() => clearField(e.id, 'morning')} className="btn-mini-delete" title={t.deleteMorning}>×</button>}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <span>E: {e.evening}L</span>
+                              {e.evening > 0 && <button onClick={() => clearField(e.id, 'evening')} className="btn-mini-delete" title={t.deleteEvening}>×</button>}
+                            </div>
                             <span className="bold">Total: {e.total}L</span>
                           </div>
                         </div>
