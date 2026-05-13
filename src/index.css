@@ -205,7 +205,25 @@ body {
 
 .whatsapp { background: #25d366; }
 .sms { background: #3b82f6; }
-.btn-delete { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.5rem; }
+.btn-delete-red {
+  background: var(--danger-color);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-delete-red:hover {
+  background: var(--danger-hover);
+}
+
+.btn-delete-red:active {
+  transform: scale(0.95);
+}
 
 /* Bottom Nav */
 .bottom-nav {

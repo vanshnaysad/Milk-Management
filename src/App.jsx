@@ -47,6 +47,8 @@ const translations = {
     offlineText: "This app requires an internet connection to function safely and save your data.",
     reconnect: "Try Reconnecting",
     langCode: "EN",
+    delete: "Delete",
+    deleteConfirm: "Are you sure you want to delete this?",
     billingMessage: (name, total, rate, amount) => `Namaste ${name}, Total Milk: ${total}L (@₹${rate}). Total Bill: ₹${amount}.`
   },
   gu: {
@@ -91,6 +93,8 @@ const translations = {
     offlineText: "તમારો ડેટા સુરક્ષિત રીતે સેવ કરવા માટે ઇન્ટરનેટ કનેક્શન જરૂરી છે.",
     reconnect: "ફરીથી પ્રયાસ કરો",
     langCode: "GU",
+    delete: "ડિલીટ",
+    deleteConfirm: "શું તમે આ કાઢી નાખવા માંગો છો?",
     billingMessage: (name, total, rate, amount) => `નમસ્તે ${name}, કુલ દૂધ: ${total} લિટર (@₹${rate}). કુલ બિલ: ₹${amount}.`
   }
 };
@@ -290,12 +294,20 @@ export default function MilkManagementApp() {
 
   const deleteCustomer = (id) => {
     if (!user) return;
+    if (!window.confirm(t.deleteConfirm)) return;
     remove(ref(db, `users/${user.uid}/customers/${id}`));
     entries.forEach((e) => {
       if (e.customerId === id) {
         remove(ref(db, `users/${user.uid}/entries/${e.id}`));
       }
     });
+  };
+
+  const deleteEntry = (id) => {
+    if (!user) return;
+    if (window.confirm(t.deleteConfirm)) {
+      remove(ref(db, `users/${user.uid}/entries/${id}`));
+    }
   };
 
   const bills = useMemo(() => {
@@ -547,7 +559,7 @@ export default function MilkManagementApp() {
                         <div className="item-name">{c.name}</div>
                         <div className="item-sub">{c.mobile} • ₹{c.rate}/L</div>
                       </div>
-                      <button onClick={() => deleteCustomer(c.id)} className="btn-delete">🗑️</button>
+                      <button onClick={() => deleteCustomer(c.id)} className="btn-delete-red">{t.delete}</button>
                     </div>
                   ))}
                   {filteredCustomers.length === 0 && <div className="empty-state">{t.noRecords}</div>}
@@ -578,6 +590,7 @@ export default function MilkManagementApp() {
                             <span className="bold">Total: {e.total}L</span>
                           </div>
                         </div>
+                        <button onClick={() => deleteEntry(e.id)} className="btn-delete-red" style={{ fontSize: '0.65rem', padding: '0.25rem 0.5rem' }}>{t.delete}</button>
                       </div>
                     );
                   })}
