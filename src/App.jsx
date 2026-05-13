@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ref, onValue, push, set, remove, goOnline } from 'firebase/database';
-import { signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
 import './index.css';
 
@@ -13,21 +13,23 @@ export default function MilkManagementApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    let authUnsub = () => {};
+    // Subscribe to auth state immediately
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
 
-    // FIRST process any pending redirect result, THEN listen to auth state.
-    // If we subscribe to onAuthStateChanged in parallel, it fires null before
-    // Firebase processes the redirect — causing a login loop.
+    // Also process any pending redirect result (mobile fallback)
     getRedirectResult(auth)
-      .catch(() => {}) // ignore errors (no redirect in progress)
-      .finally(() => {
-        authUnsub = onAuthStateChanged(auth, (currentUser) => {
-          setUser(currentUser);
+      .then((result) => {
+        if (result?.user) {
+          setUser(result.user);
           setAuthLoading(false);
-        });
-      });
+        }
+      })
+      .catch(() => {});
 
-    return () => authUnsub();
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -248,9 +250,20 @@ export default function MilkManagementApp() {
     );
   }
 
-  const handleGoogleSignIn = () => {
-    // Use redirect — works reliably on all mobile browsers & deployed apps
-    signInWithRedirect(auth, googleProvider);
+  const handleGoogleSignIn = async () => {
+    try {
+      // Popup is instant — works on desktop and most mobile browsers
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      // Only fall back to redirect if popup was actually blocked
+      if (
+        err.code === 'auth/popup-blocked' ||
+        err.code === 'auth/popup-closed-by-user' ||
+        err.code === 'auth/cancelled-popup-request'
+      ) {
+        signInWithRedirect(auth, googleProvider);
+      }
+    }
   };
 
   if (!user) {
