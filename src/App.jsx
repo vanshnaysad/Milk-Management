@@ -13,13 +13,21 @@ export default function MilkManagementApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    // Handle redirect result first (for mobile/Vercel)
-    getRedirectResult(auth).catch(() => {});
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthLoading(false);
-    });
-    return () => unsubscribe();
+    let authUnsub = () => {};
+
+    // FIRST process any pending redirect result, THEN listen to auth state.
+    // If we subscribe to onAuthStateChanged in parallel, it fires null before
+    // Firebase processes the redirect — causing a login loop.
+    getRedirectResult(auth)
+      .catch(() => {}) // ignore errors (no redirect in progress)
+      .finally(() => {
+        authUnsub = onAuthStateChanged(auth, (currentUser) => {
+          setUser(currentUser);
+          setAuthLoading(false);
+        });
+      });
+
+    return () => authUnsub();
   }, []);
 
   useEffect(() => {
