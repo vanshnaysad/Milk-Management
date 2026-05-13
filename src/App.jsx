@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ref, onValue, push, set, remove, goOnline } from 'firebase/database';
 import { signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
@@ -98,136 +98,6 @@ export default function MilkManagementApp() {
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
-
-  // ── BACKUP / EXPORT FUNCTIONS ────────────────────────────────────────────
-  const [backupOpen, setBackupOpen] = useState(false);
-  const [backupSuccess, setBackupSuccess] = useState('');
-
-  const getBackupData = useCallback(() => {
-    return {
-      appName: 'Milk Management System',
-      exportedAt: new Date().toLocaleString('en-IN'),
-      customers,
-      entries,
-      summary: {
-        totalCustomers: customers.length,
-        totalEntries: entries.length,
-      }
-    };
-  }, [customers, entries]);
-
-  // Download JSON file to device
-  const downloadJSON = useCallback(() => {
-    const data = getBackupData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `milk-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setBackupSuccess('JSON downloaded to your device! ✅');
-    setTimeout(() => setBackupSuccess(''), 3000);
-  }, [getBackupData]);
-
-  // Download CSV file
-  const downloadCSV = useCallback(() => {
-    const rows = [['Customer Name', 'Mobile', 'Rate', 'Date', 'Morning (L)', 'Evening (L)', 'Total (L)', 'Amount (₹)']];
-    entries.forEach(e => {
-      const c = customers.find(cu => cu.id === e.customerId);
-      if (c) {
-        rows.push([
-          c.name, c.mobile, c.rate,
-          e.date, e.morning, e.evening, e.total,
-          (e.total * Number(c.rate)).toFixed(2)
-        ]);
-      }
-    });
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `milk-entries-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setBackupSuccess('CSV downloaded to your device! ✅');
-    setTimeout(() => setBackupSuccess(''), 3000);
-  }, [customers, entries]);
-
-  // Send backup via Gmail compose
-  const sendGmailBackup = useCallback(() => {
-    const data = getBackupData();
-    const subject = encodeURIComponent(`Milk Management Backup – ${new Date().toLocaleDateString('en-IN')}`);
-    const customerList = customers.map(c => `• ${c.name} (${c.mobile}) @ ₹${c.rate}/L`).join('\n');
-    const today = new Date().toISOString().split('T')[0];
-    const todayEntries = entries
-      .filter(e => e.date === today)
-      .map(e => {
-        const c = customers.find(cu => cu.id === e.customerId);
-        return `• ${c?.name}: ${e.morning}L (morn) + ${e.evening}L (eve) = ${e.total}L`;
-      }).join('\n') || 'No entries today.';
-    const totalRevenue = customers.reduce((sum, c) => {
-      const cEntries = entries.filter(e => e.customerId === c.id);
-      return sum + cEntries.reduce((s, e) => s + e.total, 0) * Number(c.rate);
-    }, 0);
-
-    const body = encodeURIComponent(
-`🥛 MILK MANAGEMENT BACKUP
-Date: ${new Date().toLocaleString('en-IN')}
-
-📊 SUMMARY
-Total Customers: ${customers.length}
-Total Entries: ${entries.length}
-Estimated Revenue: ₹${totalRevenue.toFixed(2)}
-
-👥 CUSTOMERS
-${customerList}
-
-📅 TODAY'S ENTRIES (${today})
-${todayEntries}
-
-📦 FULL JSON BACKUP
-${JSON.stringify(data, null, 2)}
-
-—
-Sent from Milk Management System`
-    );
-    window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${subject}&body=${body}`, '_blank');
-    setBackupSuccess('Gmail opened with backup data! ✅');
-    setTimeout(() => setBackupSuccess(''), 4000);
-  }, [customers, entries, getBackupData]);
-
-  // Restore from JSON file
-  const restoreFromFile = useCallback((e) => {
-    if (!user) return;
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (data.customers && Array.isArray(data.customers)) {
-          // Write customers to Firebase
-          data.customers.forEach(c => {
-            if (c.id) set(ref(db, `users/${user.uid}/customers/${c.id}`), c);
-          });
-        }
-        if (data.entries && Array.isArray(data.entries)) {
-          data.entries.forEach(en => {
-            if (en.id) set(ref(db, `users/${user.uid}/entries/${en.id}`), en);
-          });
-        }
-        setBackupSuccess('Data restored successfully from file! ✅');
-        setTimeout(() => setBackupSuccess(''), 4000);
-      } catch (_) {
-        setBackupSuccess('❌ Invalid backup file. Please use a valid JSON backup.');
-        setTimeout(() => setBackupSuccess(''), 4000);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  }, [user]);
 
   // Check if it's billing time (last day of month, or 1st/2nd of new month)
   const isBillingTime = useMemo(() => {
@@ -423,11 +293,22 @@ Sent from Milk Management System`
             </div>
             
             <button
-              onClick={() => setBackupOpen(v => !v)}
+              onClick={() => {
+                const shareData = {
+                  title: 'Milk Management System',
+                  text: 'Check out this Milk Management app to manage your dairy business easily!',
+                  url: window.location.href,
+                };
+                if (navigator.share) {
+                  navigator.share(shareData);
+                } else {
+                  window.open(`https://wa.me/?text=${encodeURIComponent(shareData.text + " " + shareData.url)}`, '_blank');
+                }
+              }}
               className="btn-icon"
-              title="Backup"
+              title="Share App"
             >
-              💾
+              🔗
             </button>
             <button
               onClick={toggleTheme}
@@ -438,25 +319,6 @@ Sent from Milk Management System`
           </div>
         </div>
 
-        {/* Backup Panel */}
-        {backupOpen && (
-          <div className="glass-card animate-fade-in" style={{ marginBottom: '1.5rem', borderLeft: '4px solid #6366f1' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 className="card-title" style={{ margin: 0, fontSize: '1.1rem' }}>💾 Backup & Restore</h3>
-              <button onClick={() => setBackupOpen(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
-            </div>
-            <div className="backup-grid">
-              <button onClick={sendGmailBackup} className="backup-btn gmail">📧 Gmail</button>
-              <button onClick={downloadJSON} className="backup-btn json">📥 JSON</button>
-              <button onClick={downloadCSV} className="backup-btn csv">📊 CSV</button>
-              <label className="backup-btn restore">
-                🔄 Restore
-                <input type="file" accept=".json" onChange={restoreFromFile} style={{ display: 'none' }} />
-              </label>
-            </div>
-            {backupSuccess && <div className="backup-success">{backupSuccess}</div>}
-          </div>
-        )}
 
         <h1 className="header-title">Milk Manager</h1>
 
