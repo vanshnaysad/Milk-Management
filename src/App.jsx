@@ -51,6 +51,7 @@ const translations = {
     deleteConfirm: "Are you sure you want to delete this?",
     deleteMorning: "Delete Morning",
     deleteEvening: "Delete Evening",
+    edit: "Edit",
     createdBy: "Created by Naysad Vansh",
     billingMessage: (name, total, rate, amount) => `Namaste ${name}, Total Milk: ${total}L (@₹${rate}). Total Bill: ₹${amount}.`
   },
@@ -100,6 +101,7 @@ const translations = {
     deleteConfirm: "શું તમે આ કાઢી નાખવા માંગો છો?",
     deleteMorning: "સવારનું કાઢી નાખો",
     deleteEvening: "સાંજનું કાઢી નાખો",
+    edit: "ફેરફાર કરો",
     createdBy: "Naysad Vansh દ્વારા બનાવવામાં આવ્યું",
     billingMessage: (name, total, rate, amount) => `નમસ્તે ${name}, કુલ દૂધ: ${total} લિટર (@₹${rate}). કુલ બિલ: ₹${amount}.`
   }
@@ -330,6 +332,33 @@ export default function MilkManagementApp() {
       remove(ref(db, `users/${user.uid}/entries/${id}`));
     } else {
       set(ref(db, `users/${user.uid}/entries/${id}`), newData);
+    }
+  };
+
+  const editEntry = (id) => {
+    if (!user) return;
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+
+    const newMorning = window.prompt(t.morningPlaceholder, entry.morning);
+    if (newMorning === null) return;
+
+    const newEvening = window.prompt(t.eveningPlaceholder, entry.evening);
+    if (newEvening === null) return;
+
+    const morning = parseFloat(newMorning || 0);
+    const evening = parseFloat(newEvening || 0);
+    const total = morning + evening;
+
+    if (total === 0) {
+      remove(ref(db, `users/${user.uid}/entries/${id}`));
+    } else {
+      set(ref(db, `users/${user.uid}/entries/${id}`), {
+        ...entry,
+        morning,
+        evening,
+        total
+      });
     }
   };
 
@@ -620,7 +649,10 @@ export default function MilkManagementApp() {
                             <span className="bold">Total: {e.total}L</span>
                           </div>
                         </div>
-                        <button onClick={() => deleteEntry(e.id)} className="btn-delete-red" style={{ fontSize: '0.65rem', padding: '0.25rem 0.5rem' }}>{t.delete}</button>
+                        <div className="item-actions" style={{ flexDirection: 'column', gap: '0.4rem' }}>
+                          <button onClick={() => editEntry(e.id)} className="btn-edit-blue" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: '700', cursor: 'pointer' }}>{t.edit}</button>
+                          <button onClick={() => deleteEntry(e.id)} className="btn-delete-red" style={{ fontSize: '0.7rem', padding: '0.3rem 0.6rem' }}>{t.delete}</button>
+                        </div>
                       </div>
                     );
                   })}
