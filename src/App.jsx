@@ -51,6 +51,7 @@ const translations = {
     deleteConfirm: "Are you sure you want to delete this?",
     deleteMorning: "Delete Morning",
     deleteEvening: "Delete Evening",
+    createdBy: "Created by Naysad Vansh",
     billingMessage: (name, total, rate, amount) => `Namaste ${name}, Total Milk: ${total}L (@₹${rate}). Total Bill: ₹${amount}.`
   },
   gu: {
@@ -99,6 +100,7 @@ const translations = {
     deleteConfirm: "શું તમે આ કાઢી નાખવા માંગો છો?",
     deleteMorning: "સવારનું કાઢી નાખો",
     deleteEvening: "સાંજનું કાઢી નાખો",
+    createdBy: "Naysad Vansh દ્વારા બનાવવામાં આવ્યું",
     billingMessage: (name, total, rate, amount) => `નમસ્તે ${name}, કુલ દૂધ: ${total} લિટર (@₹${rate}). કુલ બિલ: ₹${amount}.`
   }
 };
@@ -400,6 +402,7 @@ export default function MilkManagementApp() {
           <img src="/logo.png" alt="Logo" className="login-logo" />
           <h1 className="login-title">{t.appName}</h1>
           <p className="login-subtitle">Apna dairy business manage karo<br/>asaani se, kahin bhi 🥛</p>
+          <div className="login-credit">{t.createdBy}</div>
           <button onClick={toggleLang} className="btn-icon" style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', color: 'white' }}>{t.langCode}</button>
         </div>
 
@@ -656,6 +659,10 @@ export default function MilkManagementApp() {
               </div>
             </div>
           )}
+
+          <div className="app-footer">
+            {t.createdBy}
+          </div>
         </div>
 
         {/* Bottom Navigation for Mobile */}

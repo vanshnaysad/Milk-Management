@@ -345,6 +345,14 @@ body {
   font-size: 0.9rem;
 }
 
+.app-footer {
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
 /* ── LOGIN SCREEN ─────────────────────────────────────────── */
 .login-screen {
   min-height: 100vh;
@@ -426,6 +434,13 @@ body {
   color: rgba(255,255,255,0.5);
   font-size: 1rem;
   line-height: 1.6;
+}
+
+.login-credit {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.3);
+  font-weight: 600;
 }
 
 /* Bottom sheet */
