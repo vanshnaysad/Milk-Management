@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ref, onValue, push, set, remove, goOnline } from 'firebase/database';
-import { signInWithPopup, onAuthStateChanged, signOut } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
 import './index.css';
 
@@ -13,6 +13,8 @@ export default function MilkManagementApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
+    // Handle redirect result first (for mobile/Vercel)
+    getRedirectResult(auth).catch(() => {});
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -238,19 +240,49 @@ export default function MilkManagementApp() {
     );
   }
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      // Popup blocked or unavailable on mobile — use redirect
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        await signInWithRedirect(auth, googleProvider);
+      }
+    }
+  };
+
   if (!user) {
     return (
-      <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div className="glass-card animate-fade-in" style={{ maxWidth: '400px', width: '90%' }}>
-          <img src="/logo.png" alt="Logo" style={{ height: '5rem', marginBottom: '1.5rem' }} />
-          <h1 className="header-title" style={{ fontSize: '1.75rem', marginBottom: '1rem' }}>Milk Management</h1>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Sign in to access your personal data and sync across devices.</p>
-          <button 
-            onClick={() => signInWithPopup(auth, googleProvider)}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}
+      <div className="login-screen">
+        {/* Background decorative blobs */}
+        <div className="login-blob login-blob-1" />
+        <div className="login-blob login-blob-2" />
+
+        {/* Top branding area */}
+        <div className="login-top">
+          <img src="/logo.png" alt="Logo" className="login-logo" />
+          <h1 className="login-title">Milk Manager</h1>
+          <p className="login-subtitle">Apna dairy business manage karo<br/>asaani se, kahin bhi 🥛</p>
+        </div>
+
+        {/* Bottom sheet card */}
+        <div className="login-bottom-sheet animate-fade-in">
+          <div className="login-pill" />
+          <h2 className="login-card-heading">Welcome Back 👋</h2>
+          <p className="login-card-sub">Sign in to access your personal data and sync across all devices.</p>
+
+          <div className="login-features">
+            <div className="login-feature-item">☁️ Cloud sync</div>
+            <div className="login-feature-item">🔒 Secure data</div>
+            <div className="login-feature-item">📱 Any device</div>
+          </div>
+
+          <button
+            id="google-signin-btn"
+            onClick={handleGoogleSignIn}
+            className="btn-google-signin"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="22" height="22" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
