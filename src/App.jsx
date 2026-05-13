@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { ref, onValue, push, set, remove, goOnline } from 'firebase/database';
-import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth, googleProvider } from './firebase';
 import './index.css';
 
@@ -240,15 +240,9 @@ export default function MilkManagementApp() {
     );
   }
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
-      // Popup blocked or unavailable on mobile — use redirect
-      if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        await signInWithRedirect(auth, googleProvider);
-      }
-    }
+  const handleGoogleSignIn = () => {
+    // Use redirect — works reliably on all mobile browsers & deployed apps
+    signInWithRedirect(auth, googleProvider);
   };
 
   if (!user) {
