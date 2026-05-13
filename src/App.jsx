@@ -4,6 +4,97 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChan
 import { db, auth, googleProvider } from './firebase';
 import './index.css';
 
+const translations = {
+  en: {
+    appName: "Milk Manager",
+    home: "Home",
+    entry: "Entry",
+    records: "Records",
+    billing: "Billing",
+    logout: "Logout",
+    online: "Online",
+    offline: "Offline",
+    customers: "Customers",
+    today: "Today",
+    revenue: "Revenue",
+    addCustomer: "Add New Customer",
+    nameLabel: "Name",
+    mobileLabel: "Mobile",
+    rateLabel: "Rate / Liter",
+    saveCustomerBtn: "Add Customer",
+    dailyEntry: "Daily Entry",
+    selectCustomer: "Select Customer",
+    morningPlaceholder: "Morning (L)",
+    eveningPlaceholder: "Evening (L)",
+    dateLabel: "Date",
+    saveEntryBtn: "Save Entry",
+    customerList: "Customer List",
+    searchPlaceholder: "Search...",
+    milkRecords: "Milk Records",
+    noRecords: "No records for this date",
+    monthlyBilling: "Monthly Billing",
+    totalMilkLabel: "Total Milk",
+    amountLabel: "Amount",
+    noBillingData: "No billing data",
+    billingAlert: "Billing Time! Check your monthly bills.",
+    welcomeBack: "Welcome Back 👋",
+    signInSubtitle: "Sign in to access your personal data and sync across all devices.",
+    cloudSync: "Cloud sync",
+    secureData: "Secure data",
+    anyDevice: "Any device",
+    signInGoogle: "Sign in with Google",
+    offlineTitle: "📴 You are Offline",
+    offlineText: "This app requires an internet connection to function safely and save your data.",
+    reconnect: "Try Reconnecting",
+    langCode: "EN",
+    billingMessage: (name, total, rate, amount) => `Namaste ${name}, Total Milk: ${total}L (@₹${rate}). Total Bill: ₹${amount}.`
+  },
+  gu: {
+    appName: "મિલ્ક મેનેજર",
+    home: "હોમ",
+    entry: "એન્ટ્રી",
+    records: "રેકોર્ડ્સ",
+    billing: "બિલિંગ",
+    logout: "લોગઆઉટ",
+    online: "ઓનલાઇન",
+    offline: "ઓફલાઇન",
+    customers: "ગ્રાહકો",
+    today: "આજે",
+    revenue: "આવક",
+    addCustomer: "નવો ગ્રાહક ઉમેરો",
+    nameLabel: "નામ",
+    mobileLabel: "મોબાઇલ",
+    rateLabel: "ભાવ / લિટર",
+    saveCustomerBtn: "ગ્રાહક ઉમેરો",
+    dailyEntry: "દૈનિક એન્ટ્રી",
+    selectCustomer: "ગ્રાહક પસંદ કરો",
+    morningPlaceholder: "સવાર (લિટર)",
+    eveningPlaceholder: "સાંજ (લિટર)",
+    dateLabel: "તારીખ",
+    saveEntryBtn: "એન્ટ્રી સાચવો",
+    customerList: "ગ્રાહકોની યાદી",
+    searchPlaceholder: "શોધો...",
+    milkRecords: "દૂધના રેકોર્ડ્સ",
+    noRecords: "આ તારીખ માટે કોઈ રેકોર્ડ નથી",
+    monthlyBilling: "માસિક બિલિંગ",
+    totalMilkLabel: "કુલ દૂધ",
+    amountLabel: "રકમ",
+    noBillingData: "બિલિંગ ડેટા નથી",
+    billingAlert: "બિલિંગનો સમય! તમારા માસિક બિલ તપાસો.",
+    welcomeBack: "સ્વાગત છે 👋",
+    signInSubtitle: "તમારા પર્સનલ ડેટા અને બધી ડિવાઇસમાં સિંક કરવા માટે સાઇન ઇન કરો.",
+    cloudSync: "ક્લાઉડ સિંક",
+    secureData: "સુરક્ષિત ડેટા",
+    anyDevice: "કોઈપણ ડિવાઇસ",
+    signInGoogle: "Google સાથે સાઇન ઇન કરો",
+    offlineTitle: "📴 તમે ઓફલાઇન છો",
+    offlineText: "તમારો ડેટા સુરક્ષિત રીતે સેવ કરવા માટે ઇન્ટરનેટ કનેક્શન જરૂરી છે.",
+    reconnect: "ફરીથી પ્રયાસ કરો",
+    langCode: "GU",
+    billingMessage: (name, total, rate, amount) => `નમસ્તે ${name}, કુલ દૂધ: ${total} લિટર (@₹${rate}). કુલ બિલ: ₹${amount}.`
+  }
+};
+
 
 export default function MilkManagementApp() {
   const [user, setUser] = useState(null);
@@ -11,6 +102,15 @@ export default function MilkManagementApp() {
   const [customers, setCustomers] = useState([]);
   const [entries, setEntries] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [lang, setLang] = useState(() => localStorage.getItem('milk_lang') || 'gu');
+
+  const t = translations[lang];
+
+  const toggleLang = () => {
+    const newLang = lang === 'en' ? 'gu' : 'en';
+    setLang(newLang);
+    localStorage.setItem('milk_lang', newLang);
+  };
 
   useEffect(() => {
     // Subscribe to auth state immediately
@@ -233,10 +333,8 @@ export default function MilkManagementApp() {
 
   const handleGoogleSignIn = async () => {
     try {
-      // Popup is instant — works on desktop and most mobile browsers
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
-      // Only fall back to redirect if popup was actually blocked
       if (
         err.code === 'auth/popup-blocked' ||
         err.code === 'auth/popup-closed-by-user' ||
@@ -247,30 +345,40 @@ export default function MilkManagementApp() {
     }
   };
 
+  if (!isOnline) {
+    return (
+      <div className="app-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div className="glass-card animate-fade-in">
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>{t.offlineTitle}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>{t.offlineText}</p>
+          <button onClick={() => window.location.reload()} className="btn btn-primary" style={{ marginTop: '1.5rem' }}>{t.reconnect}</button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="login-screen">
-        {/* Background decorative blobs */}
         <div className="login-blob login-blob-1" />
         <div className="login-blob login-blob-2" />
 
-        {/* Top branding area */}
         <div className="login-top">
           <img src="/logo.png" alt="Logo" className="login-logo" />
-          <h1 className="login-title">Milk Manager</h1>
+          <h1 className="login-title">{t.appName}</h1>
           <p className="login-subtitle">Apna dairy business manage karo<br/>asaani se, kahin bhi 🥛</p>
+          <button onClick={toggleLang} className="btn-icon" style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', color: 'white' }}>{t.langCode}</button>
         </div>
 
-        {/* Bottom sheet card */}
         <div className="login-bottom-sheet animate-fade-in">
           <div className="login-pill" />
-          <h2 className="login-card-heading">Welcome Back 👋</h2>
-          <p className="login-card-sub">Sign in to access your personal data and sync across all devices.</p>
+          <h2 className="login-card-heading">{t.welcomeBack}</h2>
+          <p className="login-card-sub">{t.signInSubtitle}</p>
 
           <div className="login-features">
-            <div className="login-feature-item">☁️ Cloud sync</div>
-            <div className="login-feature-item">🔒 Secure data</div>
-            <div className="login-feature-item">📱 Any device</div>
+            <div className="login-feature-item">☁️ {t.cloudSync}</div>
+            <div className="login-feature-item">🔒 {t.secureData}</div>
+            <div className="login-feature-item">📱 {t.anyDevice}</div>
           </div>
 
           <button
@@ -284,20 +392,8 @@ export default function MilkManagementApp() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Sign in with Google
+            {t.signInGoogle}
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isOnline) {
-    return (
-      <div className="app-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div className="glass-card animate-fade-in">
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>📴 You are Offline</h2>
-          <p style={{ color: 'var(--text-muted)' }}>This app requires an internet connection to function safely and save your data.</p>
-          <button onClick={() => window.location.reload()} className="btn btn-primary" style={{ marginTop: '1.5rem' }}>Try Reconnecting</button>
         </div>
       </div>
     );
@@ -312,7 +408,7 @@ export default function MilkManagementApp() {
             <img src={user.photoURL} alt={user.displayName} style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', border: '2px solid var(--primary-color)' }} />
             <div>
               <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>{user.displayName}</div>
-              <button onClick={() => signOut(auth)} style={{ background: 'none', border: 'none', color: 'var(--danger-color)', fontSize: '0.75rem', padding: 0, cursor: 'pointer', fontWeight: '600' }}>Logout</button>
+              <button onClick={() => signOut(auth)} style={{ background: 'none', border: 'none', color: 'var(--danger-color)', fontSize: '0.75rem', padding: 0, cursor: 'pointer', fontWeight: '600' }}>{t.logout}</button>
             </div>
           </div>
 
@@ -329,13 +425,21 @@ export default function MilkManagementApp() {
               border: `1px solid ${isOnline ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
             }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: isOnline ? '#10b981' : '#ef4444', display: 'inline-block' }} />
-              {isOnline ? 'Online' : 'Offline'}
+              {isOnline ? t.online : t.offline}
             </div>
             
             <button
+              onClick={toggleLang}
+              className="btn-icon"
+              title="Toggle Language"
+              style={{ fontSize: '0.75rem', fontWeight: '800' }}
+            >
+              {t.langCode}
+            </button>
+            <button
               onClick={() => {
                 const shareData = {
-                  title: 'Milk Management System',
+                  title: t.appName,
                   text: 'Check out this Milk Management app to manage your dairy business easily!',
                   url: window.location.href,
                 };
@@ -360,7 +464,7 @@ export default function MilkManagementApp() {
         </div>
 
 
-        <h1 className="header-title">Milk Manager</h1>
+        <h1 className="header-title">{t.appName}</h1>
 
         {/* Main Content Area based on Tabs */}
         <div style={{ paddingBottom: '80px' }}>
@@ -368,7 +472,7 @@ export default function MilkManagementApp() {
             <div className="tab-content animate-fade-in">
               {isBillingTime && (
                 <div className="billing-alert">
-                  <strong>🔔 Billing Time!</strong> Check your monthly bills.
+                  <strong>🔔 {t.billingAlert}</strong>
                 </div>
               )}
               
@@ -376,33 +480,33 @@ export default function MilkManagementApp() {
                 <div className="stat-card">
                   <div className="stat-icon" style={{ color: '#3b82f6' }}>👥</div>
                   <div className="stat-details">
-                    <h3>Customers</h3>
+                    <h3>{t.customers}</h3>
                     <p className="stat-value">{customers.length}</p>
                   </div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon" style={{ color: '#10b981' }}>🥛</div>
                   <div className="stat-details">
-                    <h3>Today</h3>
+                    <h3>{t.today}</h3>
                     <p className="stat-value">{todayTotalMilk.toFixed(1)}L</p>
                   </div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon" style={{ color: '#f59e0b' }}>💰</div>
                   <div className="stat-details">
-                    <h3>Revenue</h3>
+                    <h3>{t.revenue}</h3>
                     <p className="stat-value">₹{totalExpectedRevenue.toFixed(0)}</p>
                   </div>
                 </div>
               </div>
 
               <div className="glass-card">
-                <h2 className="card-title">Add New Customer</h2>
+                <h2 className="card-title">{t.addCustomer}</h2>
                 <div className="form-group">
-                  <input type="text" placeholder="Name" value={customerForm.name} onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})} className="form-input" />
-                  <input type="text" placeholder="Mobile" value={customerForm.mobile} onChange={(e) => setCustomerForm({...customerForm, mobile: e.target.value})} className="form-input" />
-                  <input type="number" placeholder="Rate / Liter" value={customerForm.rate} onChange={(e) => setCustomerForm({...customerForm, rate: e.target.value})} className="form-input" />
-                  <button onClick={addCustomer} className="btn btn-primary">Add Customer</button>
+                  <input type="text" placeholder={t.nameLabel} value={customerForm.name} onChange={(e) => setCustomerForm({...customerForm, name: e.target.value})} className="form-input" />
+                  <input type="text" placeholder={t.mobileLabel} value={customerForm.mobile} onChange={(e) => setCustomerForm({...customerForm, mobile: e.target.value})} className="form-input" />
+                  <input type="number" placeholder={t.rateLabel} value={customerForm.rate} onChange={(e) => setCustomerForm({...customerForm, rate: e.target.value})} className="form-input" />
+                  <button onClick={addCustomer} className="btn btn-primary">{t.saveCustomerBtn}</button>
                 </div>
               </div>
             </div>
@@ -411,29 +515,29 @@ export default function MilkManagementApp() {
           {activeTab === 'customers' && (
             <div className="tab-content animate-fade-in">
               <div className="glass-card">
-                <h2 className="card-title">Daily Entry</h2>
+                <h2 className="card-title">{t.dailyEntry}</h2>
                 <div className="form-group">
                   <select
                     value={entryForm.customer}
                     onChange={(e) => setEntryForm({...entryForm, customer: e.target.value})}
                     className="form-input"
                   >
-                    <option value="">Select Customer</option>
+                    <option value="">{t.selectCustomer}</option>
                     {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <input type="number" placeholder="Morning (L)" value={entryForm.morning} onChange={(e) => setEntryForm({...entryForm, morning: e.target.value})} className="form-input" />
-                    <input type="number" placeholder="Evening (L)" value={entryForm.evening} onChange={(e) => setEntryForm({...entryForm, evening: e.target.value})} className="form-input" />
+                    <input type="number" placeholder={t.morningPlaceholder} value={entryForm.morning} onChange={(e) => setEntryForm({...entryForm, morning: e.target.value})} className="form-input" />
+                    <input type="number" placeholder={t.eveningPlaceholder} value={entryForm.evening} onChange={(e) => setEntryForm({...entryForm, evening: e.target.value})} className="form-input" />
                   </div>
                   <input type="date" value={entryForm.date} onChange={(e) => setEntryForm({...entryForm, date: e.target.value})} className="form-input" />
-                  <button onClick={addEntry} className="btn btn-success">Save Entry</button>
+                  <button onClick={addEntry} className="btn btn-success">{t.saveEntryBtn}</button>
                 </div>
               </div>
 
               <div className="glass-card">
                 <div className="card-header-flex">
-                  <h2 className="card-title">Customer List</h2>
-                  <input type="text" placeholder="Search..." value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} className="search-input" />
+                  <h2 className="card-title">{t.customerList}</h2>
+                  <input type="text" placeholder={t.searchPlaceholder} value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} className="search-input" />
                 </div>
                 
                 <div className="list-container">
@@ -446,7 +550,7 @@ export default function MilkManagementApp() {
                       <button onClick={() => deleteCustomer(c.id)} className="btn-delete">🗑️</button>
                     </div>
                   ))}
-                  {filteredCustomers.length === 0 && <div className="empty-state">No customers found</div>}
+                  {filteredCustomers.length === 0 && <div className="empty-state">{t.noRecords}</div>}
                 </div>
               </div>
             </div>
@@ -456,7 +560,7 @@ export default function MilkManagementApp() {
             <div className="tab-content animate-fade-in">
               <div className="glass-card">
                 <div className="card-header-flex">
-                  <h2 className="card-title">Milk Records</h2>
+                  <h2 className="card-title">{t.milkRecords}</h2>
                   <input type="date" value={entryDateFilter} onChange={(e) => setEntryDateFilter(e.target.value)} className="search-input" />
                 </div>
                 
@@ -477,7 +581,7 @@ export default function MilkManagementApp() {
                       </div>
                     );
                   })}
-                  {filteredEntries.length === 0 && <div className="empty-state">No records for this date</div>}
+                  {filteredEntries.length === 0 && <div className="empty-state">{t.noRecords}</div>}
                 </div>
               </div>
             </div>
@@ -486,10 +590,10 @@ export default function MilkManagementApp() {
           {activeTab === 'billing' && (
             <div className="tab-content animate-fade-in">
               <div className="glass-card">
-                <h2 className="card-title">Monthly Billing</h2>
+                <h2 className="card-title">{t.monthlyBilling}</h2>
                 <div className="list-container">
                   {bills.map((b) => {
-                    const message = `નમસ્તે ${b.customer.name}, કુલ દૂધ: ${b.totalMilk.toFixed(2)} લિટર (@₹${b.customer.rate}). કુલ બિલ: ₹${b.amount.toFixed(2)}.`;
+                    const message = t.billingMessage(b.customer.name, b.totalMilk.toFixed(2), b.customer.rate, b.amount.toFixed(2));
                     const mobileFormatted = b.customer.mobile.length === 10 ? `91${b.customer.mobile}` : b.customer.mobile;
                     const whatsappLink = `https://wa.me/${mobileFormatted}?text=${encodeURIComponent(message)}`;
                     
@@ -507,7 +611,7 @@ export default function MilkManagementApp() {
                       </div>
                     );
                   })}
-                  {bills.length === 0 && <div className="empty-state">No billing data</div>}
+                  {bills.length === 0 && <div className="empty-state">{t.noBillingData}</div>}
                 </div>
               </div>
             </div>
@@ -518,19 +622,19 @@ export default function MilkManagementApp() {
         <nav className="bottom-nav">
           <button className={activeTab === 'dashboard' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('dashboard')}>
             <span className="nav-icon">🏠</span>
-            <span className="nav-text">Home</span>
+            <span className="nav-text">{t.home}</span>
           </button>
           <button className={activeTab === 'customers' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('customers')}>
             <span className="nav-icon">📝</span>
-            <span className="nav-text">Entry</span>
+            <span className="nav-text">{t.entry}</span>
           </button>
           <button className={activeTab === 'entries' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('entries')}>
             <span className="nav-icon">📅</span>
-            <span className="nav-text">Records</span>
+            <span className="nav-text">{t.records}</span>
           </button>
           <button className={activeTab === 'billing' ? 'nav-item active' : 'nav-item'} onClick={() => setActiveTab('billing')}>
             <span className="nav-icon">💰</span>
-            <span className="nav-text">Billing</span>
+            <span className="nav-text">{t.billing}</span>
           </button>
         </nav>
       </div>
