@@ -77,26 +77,7 @@ export default function MilkManagementApp() {
     };
   }, []);
 
-  // ── LOCAL DEVICE MIRROR (always keep a copy on the phone/device) ─────────
-  useEffect(() => {
-    if (user && (customers.length > 0 || entries.length > 0)) {
-      const snapshot = { customers, entries, savedAt: new Date().toISOString() };
-      localStorage.setItem(`milk_data_mirror_${user.uid}`, JSON.stringify(snapshot));
-    }
-  }, [customers, entries, user]);
 
-  // Load from local mirror if Firebase is offline
-  useEffect(() => {
-    if (!user) return;
-    const mirror = localStorage.getItem(`milk_data_mirror_${user.uid}`);
-    if (!navigator.onLine && mirror) {
-      try {
-        const { customers: c, entries: e } = JSON.parse(mirror);
-        setCustomers(c || []);
-        setEntries(e || []);
-      } catch (_) {}
-    }
-  }, [user]);
 
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('milk_theme') || 'light';
@@ -140,7 +121,7 @@ export default function MilkManagementApp() {
   const [customerForm, setCustomerForm] = useState({
     name: "",
     mobile: "",
-    rate: "60",
+    rate: "50",
   });
 
   const [entryForm, setEntryForm] = useState({
@@ -169,7 +150,7 @@ export default function MilkManagementApp() {
     setCustomerForm({
       name: "",
       mobile: "",
-      rate: "60",
+      rate: "50",
     });
   };
 
@@ -305,6 +286,18 @@ export default function MilkManagementApp() {
             </svg>
             Sign in with Google
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isOnline) {
+    return (
+      <div className="app-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div className="glass-card animate-fade-in">
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>📴 You are Offline</h2>
+          <p style={{ color: 'var(--text-muted)' }}>This app requires an internet connection to function safely and save your data.</p>
+          <button onClick={() => window.location.reload()} className="btn btn-primary" style={{ marginTop: '1.5rem' }}>Try Reconnecting</button>
         </div>
       </div>
     );
@@ -496,7 +489,7 @@ export default function MilkManagementApp() {
                 <h2 className="card-title">Monthly Billing</h2>
                 <div className="list-container">
                   {bills.map((b) => {
-                    const message = `Namaste ${b.customer.name}, Total Milk: ${b.totalMilk.toFixed(2)}L (@₹${b.customer.rate}). Total Bill: ₹${b.amount.toFixed(2)}.`;
+                    const message = `નમસ્તે ${b.customer.name}, કુલ દૂધ: ${b.totalMilk.toFixed(2)} લિટર (@₹${b.customer.rate}). કુલ બિલ: ₹${b.amount.toFixed(2)}.`;
                     const mobileFormatted = b.customer.mobile.length === 10 ? `91${b.customer.mobile}` : b.customer.mobile;
                     const whatsappLink = `https://wa.me/${mobileFormatted}?text=${encodeURIComponent(message)}`;
                     
